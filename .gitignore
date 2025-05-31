@@ -1,2 +1,48 @@
+# Cursor IDE files - 包含敏感信息，必须忽略
+.specstory/
+.cursorindexingignore
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files - 可能包含密钥
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Log files
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Project specific
+node_modules/
+dist/
+build/
 # SpecStory explanation file
 .specstory/.what-is-this.md
