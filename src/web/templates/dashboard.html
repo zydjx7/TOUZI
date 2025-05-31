@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财经智能分析系统 - 控制面板</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>财经智能分析系统</h1>
+            <p>实时监控财经动态，智能分析投资机会</p>
+            <div style="margin-top: 15px;">
+                <span class="status-indicator status-running pulsing"></span>
+                <span id="systemStatus">系统运行中</span>
+                <span style="margin-left: 20px; color: #666;">上次更新: <span id="lastUpdate">{{ last_update }}</span></span>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- 系统概览 -->
+            <div class="card">
+                <div class="card-title">📊 系统概览</div>
+                <div class="metric-row">
+                    <span class="metric-label">今日分析视频</span>
+                    <span class="metric-value" id="todayVideos">{{ stats.today_videos or 0 }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">今日分析动态</span>
+                    <span class="metric-value" id="todayDynamics">{{ stats.today_dynamics or 0 }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">今日新闻数量</span>
+                    <span class="metric-value" id="todayNews">{{ stats.today_news or 0 }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">总分析次数</span>
+                    <span class="metric-value" id="totalAnalysis">{{ stats.total_analysis or 0 }}</span>
+                </div>
+            </div>
+
+            <!-- 情感分析 -->
+            <div class="card">
+                <div class="card-title">😊 情感分析</div>
+                <div class="metric-row">
+                    <span class="metric-label">整体情感</span>
+                    <span class="metric-value positive" id="overallSentiment">{{ sentiment.overall or '中性' }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">积极内容</span>
+                    <span class="metric-value positive" id="positiveSentiment">{{ sentiment.positive or 0 }}%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">消极内容</span>
+                    <span class="metric-value negative" id="negativeSentiment">{{ sentiment.negative or 0 }}%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">中性内容</span>
+                    <span class="metric-value neutral" id="neutralSentiment">{{ sentiment.neutral or 0 }}%</span>
+                </div>
+            </div>
+
+            <!-- 投资信号 -->
+            <div class="card">
+                <div class="card-title">📈 最新投资信号</div>
+                <div class="signal-list" id="signalList">
+                    {% for signal in signals %}
+                    <div class="signal-item {{ signal.type }}">
+                        <div class="signal-target">{{ signal.target }}</div>
+                        <div class="signal-context">{{ signal.context }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 趋势图表 -->
+            <div class="card">
+                <div class="card-title">📊 分析趋势</div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 热门话题 -->
+            <div class="card">
+                <div class="card-title">🔥 热门话题</div>
+                <div id="hotTopics">
+                    {% for topic in hot_topics %}
+                    <div class="metric-row">
+                        <span class="metric-label">{{ topic.keyword }}</span>
+                        <span class="metric-value">{{ topic.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 最新新闻 -->
+            <div class="card">
+                <div class="card-title">📰 最新财经新闻</div>
+                <div id="newsList">
+                    {% for news in latest_news %}
+                    <div class="news-item">
+                        <div class="news-title">{{ news.title }}</div>
+                        <div class="news-meta">
+                            <span>{{ news.source }}</span>
+                            <span>{{ news.publish_time }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <h3 style="margin-bottom: 20px;">系统控制</h3>
+            <button class="btn" onclick="startAnalysis()">开始分析</button>
+            <button class="btn" onclick="stopAnalysis()">停止分析</button>
+            <button class="btn" onclick="generateReport()">生成报告</button>
+            <button class="btn" onclick="refreshData()">刷新数据</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        // 初始化图表数据
+        const chartLabels = {{ chart_labels | tojsonfilter | safe }};
+        const chartData = {{ chart_data | tojsonfilter | safe }};
+        
+        // 初始化图表
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: '情感分数',
+                    data: chartData,
+                    borderColor: 'rgb(102, 126, 234)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        min: -1,
+                        max: 1
+                    }
+                }
+            }
+        });
+
+        // 定时刷新数据
+        setInterval(refreshData, 60000); // 每分钟刷新一次
+    </script>
+</body>
+</html> 

@@ -1,0 +1,68 @@
+文件夹 PATH 列表
+卷序列号为 0CC7-507D
+F:.
+|   .cursorindexingignore
+|   .env.example
+|   .gitignore
+|   config.py
+|   main.py
+|   project_structure.txt
+|   README.md
+|   requirements.txt
+|   setup.py
+|   test.txt
+|   
++---.specstory
+|   |   .what-is-this.md
+|   |   
+|   \---history
+|           2025-05-29_04-34-如何使用cursor上的mcp.md
+|           2025-05-31_11-05-重新构建项目文件结构.md
+|           
++---data
++---docs
+|       API.md
+|       
++---financial_intelligence_system
+|   \---data
+|       +---cache
+|       +---reports
+|       +---transcripts
+|       \---videos
++---logs
++---src
+|   |   __init__.py
+|   |   
+|   +---core
+|   |       analyzer.py
+|   |       crawler.py
+|   |       database.py
+|   |       news_aggregator.py
+|   |       report_generator.py
+|   |       __init__.py
+|   |       
+|   +---utils
+|   |       email_notifier.py
+|   |       financial_calculator.py
+|   |       text_processor.py
+|   |       __init__.py
+|   |       
+|   \---web
+|       |   api.py
+|       |   app.py
+|       |   __init__.py
+|       |   
+|       +---static
+|       |   +---css
+|       |   |       dashboard.css
+|       |   |       
+|       |   \---js
+|       |           dashboard.js
+|       |           
+|       \---templates
+|               dashboard.html
+|               
+\---tests
+        test_crawler.py
+        __init__.py
+        
