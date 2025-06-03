@@ -18,6 +18,7 @@ class Config:
     
     # B站UP主列表 - 请替换为实际的UID和名称
     UP_LIST = [
+        {"uid": "1039025435", "name": "战国时代_姜汁汽水"},
         {"uid": "37663924", "name": "巫师财经"},  # 示例UID，请替换
         {"uid": "456664753", "name": "温义飞的频道"},  # 示例UID，请替换
         {"uid": "1266132762", "name": "老蛮数据透析站"},  # 示例UID，请替换
@@ -65,7 +66,7 @@ class Config:
     
     # 爬虫配置
     CRAWLER_CONFIG = {
-        "rate_limit_delay": 2,  # 请求间隔（秒）
+        "rate_limit_delay": 5,  # 请求间隔（秒）- 增加到5秒避免频率限制
         "max_retries": 3,  # 最大重试次数
         "timeout": 30,  # 请求超时时间
     }

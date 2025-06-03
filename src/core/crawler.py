@@ -26,6 +26,22 @@ class BilibiliCrawler:
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
         }
+        # 加载Cookie配置
+        try:
+            import json
+            from pathlib import Path
+            
+            cookie_file = Path("config/cookies.json")
+            if cookie_file.exists():
+                with open(cookie_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    cookie = data.get('bilibili', {}).get('cookie', '')
+                    if cookie:
+                        self.headers['Cookie'] = cookie
+                        logger.info("已加载B站Cookie")
+        except Exception as e:
+            logger.warning(f"加载Cookie失败: {e}")
+            
         self.rate_limit_delay = config.CRAWLER_CONFIG.get('rate_limit_delay', 2)
         self.timeout = config.CRAWLER_CONFIG.get('timeout', 30)
         
@@ -46,25 +62,58 @@ class BilibiliCrawler:
             self.session = None
             logger.info("B站爬虫会话已关闭")
     
-    async def _make_request(self, url: str, params: Dict = None) -> Optional[Dict]:
-        """发起HTTP请求"""
+    async def _make_request(self, url: str, params: Dict = None, max_retries: int = 3) -> Optional[Dict]:
+        """发起HTTP请求，带重试和速率限制"""
         if not self.session:
             await self.init_session()
         
-        try:
-            async with self.session.get(url, params=params) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    logger.warning(f"请求失败: {url}, 状态码: {response.status}")
-                    return None
-                    
-        except asyncio.TimeoutError:
-            logger.error(f"请求超时: {url}")
-            return None
-        except Exception as e:
-            logger.error(f"请求出错: {url}, 错误: {e}")
-            return None
+        for attempt in range(max_retries):
+            try:
+                # 添加速率限制延迟
+                if attempt > 0:
+                    delay = min(self.rate_limit_delay * (2 ** attempt), 30)  # 指数退避，最大30秒
+                    logger.info(f"请求重试 {attempt}/{max_retries}, 等待 {delay} 秒...")
+                    await asyncio.sleep(delay)
+                elif hasattr(self, '_last_request_time'):
+                    # 确保请求间隔
+                    elapsed = asyncio.get_event_loop().time() - self._last_request_time
+                    if elapsed < self.rate_limit_delay:
+                        await asyncio.sleep(self.rate_limit_delay - elapsed)
+                
+                self._last_request_time = asyncio.get_event_loop().time()
+                
+                async with self.session.get(url, params=params) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        
+                        # 检查B站API响应码
+                        if data and data.get('code') == -799:
+                            logger.warning(f"请求过于频繁 (第{attempt+1}次尝试): {url}")
+                            if attempt < max_retries - 1:
+                                continue  # 重试
+                            else:
+                                logger.error("达到最大重试次数，请求失败")
+                                return None
+                        
+                        return data
+                    else:
+                        logger.warning(f"请求失败: {url}, 状态码: {response.status}")
+                        if attempt < max_retries - 1:
+                            continue
+                        return None
+                        
+            except asyncio.TimeoutError:
+                logger.error(f"请求超时 (第{attempt+1}次尝试): {url}")
+                if attempt < max_retries - 1:
+                    continue
+                return None
+            except Exception as e:
+                logger.error(f"请求出错 (第{attempt+1}次尝试): {url}, 错误: {e}")
+                if attempt < max_retries - 1:
+                    continue
+                return None
+        
+        return None
     
     async def get_user_videos(self, uid: str, page_size: int = 50) -> List[Dict]:
         """获取用户视频列表"""
